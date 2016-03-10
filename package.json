@@ -4,7 +4,8 @@
   "description": "",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "mocha"
   },
   "engines": {
     "node": "5.6.x",
@@ -13,7 +14,9 @@
   "author": "",
   "license": "",
   "dependencies": {
+    "express": "^4.13.4",
+    "mocha": "^2.4.5",
+    "supertest": "^1.2.0"
   },
-  "devDependencies": {
-  }
+  "devDependencies": {}
 }

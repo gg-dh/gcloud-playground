@@ -1,17 +1,21 @@
-var http = require('http');
 var package = require('./package.json');
 var version = 'v' + package.version;
 
-var handleRequest = function(request, response) {
+var express = require('express');
+var server = express();
+
+server.get('*', function(req, res) {
     var status = 200;
     var body = 'Hello World! ' + version;
 
-    var message = 'GET ' + request.url + ' ' + status + ' "' + body + '"';
+    var message = 'GET ' + req.url + ' ' + status + ' "' + body + '"';
     console.log(message);
 
-    response.writeHead(status);
-    response.end(body);
-}
+    res.writeHead(status);
+    res.end(body);
+});
 
-var www = http.createServer(handleRequest);
-www.listen(8080);
+var port = process.env.PORT || 8080;
+server.listen(port);
+
+module.exports = server;

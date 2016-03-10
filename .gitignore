@@ -1,20 +1,27 @@
+# Dependencies
+# --------------------------------
+
+node_modules
+
+
+# Build artifacts, Wercker stuff
+# --------------------------------
+
+build
+_builds
+_cache
+_projects
+_steps
+
+
 # IDE realm
 # --------------------------------
 
 .idea
 
 
-# Static
+# Other goodness
 # --------------------------------
 
 _tmp
 *.log
-
-build
-emails
-
-# Dependencies
-# --------------------------------
-
-node_modules
-

@@ -1,7 +1,6 @@
-# The container definition we want to use for developing our app
-box: node:5.6.0-slim
 # Defining the dev pipeline
 dev:
+  box: node:5.6.0-slim
   steps:
     - npm-install
     - internal/watch:
@@ -10,6 +9,7 @@ dev:
 
 # Build definition
 build:
+  box: node:5.6.0-slim
   # The steps that will be executed on build
   steps:
     - script:
@@ -28,23 +28,55 @@ build:
           echo "npm version $(npm -v) running"
 
     # Create gcloud-playground-controller.json only for initialization
-    # - script:
-    #     name: create gcloud-playground-controller.json
-    #     code: ./create-gcloud-playground-controller.json.sh
+    - script:
+        name: create gcloud-playground-controller.json
+        code: |
+          echo $(pwd) && ls -la
+          chmod 777 ./create-gcloud-playground-controller.json.sh
+          ./create-gcloud-playground-controller.json.sh
+          ls -la
 
     # Copy files to a location that gets passed along to the deploy pipeline
     - script:
         name: copy files
-        code: cp server.js package.json "$WERCKER_OUTPUT_DIR"
+        code: cp server.js package.json gcloud-playground-controller.json gcloud-playground-service.json "$WERCKER_OUTPUT_DIR"
 
 deploy:
-  steps:
-  # Use the scratch step to build a container from scratch based on the files present
-  - internal/docker-scratch-push:
-      username: $QUAY_USERNAME
-      password: $QUAY_PASSWORD
-      cmd: node server.js
-      tag: $WERCKER_GIT_COMMIT
-      ports: "8080"
-      repository: quay.io/gg_dh/gcloud-playground
-      registry: https://quay.io
+  box: google/cloud-sdk
+
+  quay:
+    # Use the scratch step to build a container from scratch based on the files present
+    - internal/docker-scratch-push:
+        username: $QUAY_USERNAME
+        password: $QUAY_PASSWORD
+        registry: https://quay.io
+        repository: quay.io/gg_dh/gcloud-playground
+        tag: $WERCKER_GIT_COMMIT
+        cmd: node server.js
+        ports: "8080"
+
+  # Run this to create the replication controller and service
+  cluster-init:
+    - kubectl:
+        server: $KUBERNETES_MASTER
+        username: $KUBERNETES_USERNAME
+        password: $KUBERNETES_PASSWORD
+        insecure-skip-tls-verify: true
+        command: create -f gcloud-playground-controller.json
+
+    - kubectl:
+        server: $KUBERNETES_MASTER
+        username: $KUBERNETES_USERNAME
+        password: $KUBERNETES_PASSWORD
+        insecure-skip-tls-verify: true
+        command: create -f gcloud-playground-service.json
+
+  # Update the replica controller to $WERCKER_GIT_COMMIT
+  cluster-update:
+    - kubectl:
+        server: $KUBERNETES_MASTER
+        username: $KUBERNETES_USERNAME
+        password: $KUBERNETES_PASSWORD
+        insecure-skip-tls-verify: true
+        command: rolling-update playground
+        image: quay.io/gg_dh/gcloud-playground:$WERCKER_GIT_COMMIT
